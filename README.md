@@ -1,70 +1,99 @@
-# Getting Started with Create React App
+# Job Finder using React, Reactivesearch, Elasticsearch, Kibana and Docker
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
+![ElasticSearch](https://img.shields.io/badge/-ElasticSearch-005571?style=for-the-badge&logo=elasticsearch)
+![Kibana](https://img.shields.io/badge/Kibana-005571?style=for-the-badge&logo=Kibana&logoColor=white)
+![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
 
-## Available Scripts
+## Environment Setup 
 
-In the project directory, you can run:
 
-### `npm start`
+### ElasticSearch 
+  1- Run the docker-compose.yml file.
+  ```
+  version: '3.7'
+  services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.6.2
+    container_name: elasticsearch
+    restart: always
+    environment:
+      - xpack.security.enabled=false
+      - TAKE_FILE_OWNERSHIP=true
+      - discovery.type=single-node
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    cap_add:
+      - IPC_LOCK
+    volumes:
+      - elasticsearch-data-volume:/usr/share/elasticsearch/data
+    ports:
+      - 9200:9200
+      - 9300:9300 
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+  kibana:
+    container_name: kibana
+    image: docker.elastic.co/kibana/kibana:8.6.2
+    restart: always
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - 5601:5601
+    depends_on:
+      - elasticsearch
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+volumes:
+  elasticsearch-data-volume:
+    driver: local
 
-### `npm test`
+  ```
+  
+  2- Open Kibana Create an index called jobboard.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+```
+PUT /jobboard/
+{
+  "settings": {
+    "number_of_shards": 1
+  },
+  "mappings": {
+    "properties": {
+      "jobTitle": { "type": "text" },
+      "company": { "type": "text" },
+      "city": { "type": "text" },
+      "description": { "type": "text" }
+    }
+  }
+}
 
-### `npm run build`
+```
+  3- Insert some data manually. Make sure that all the types are ```text``` not keyword. Copy and paste bulkdata.json into [Dev Console](http://localhost:5601/app/dev_tools#/console) . 
+  Optional: Check if the records are inserted successfully [here](http://localhost:9200/jobboard/_search/?size=1000&pretty).
+  
+  4- Add the following lines into elasticsearch.yml . 
+        * Create a local file ``elasticsearch.yml``. Copy the snippet below, save it and then copy it to the elasticsearch container.  
+``` sh
+sh-5.0$ cat config/elasticsearch.yml
+ cluster.name: "docker-cluster"
+ network.host: 0.0.0.0
+ http.cors.enabled : true
+ http.cors.allow-origin: "*"
+ http.cors.allow-methods: OPTIONS, HEAD, GET, POST, PUT, DELETE
+ http.cors.allow-headers: X-Requested-With,X-Auth-Token,Content-Type,Content-Length
+ http.cors.allow-credentials: truesh-5.0$ ^C
+ ```
+ 
+ 5- Check the changes by using ```cat config/elasticsearch.yml``` and then restart the container.
+ 
+### React  
+6- Install dependencies by using ```npm i``` command.
+7- Run the project by using ```npm start``` command.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
-
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+ 
